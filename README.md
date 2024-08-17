@@ -1,5 +1,5 @@
 # Reinforced Model Merging
-Code for paper "Reinforced Model Merging"。
+Code for paper "Reinforced Model Merging".
 
 
 <div align="center">
@@ -11,7 +11,7 @@ Code for paper "Reinforced Model Merging"。
 
 Here we provide a quick start for RMM.
 
-All you need is to **Train** the models and **Merge** them as you want.
+All you need to do is **Train** the models and **Merge** them as you wish.
 
 ### Merge ViT-B/16 on CUB-200 & Stanford Dogs datasets
 
