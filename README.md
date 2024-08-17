@@ -22,8 +22,8 @@ python finetune_CV.py --model vit_b --dataset dogs
 ```
 
 #### 2. Merge Models
+* choose merging method [ties,dare,dare_ties]
+* set smaller data_scale for faster merging
 ```bash
 python train_RLM.py --model vit_b --method ties --dataset cub,dogs --data_scale 0.1
-# merging method [ties,dare,dare_ties]
-# set smaller data_scale for faster merging
 ```
