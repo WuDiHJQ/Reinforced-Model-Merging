@@ -86,7 +86,7 @@ def bernoulli(tensor: torch.Tensor, density: float, rescale: bool):
 
 def GeneralizedTaskArithmetic(consensus_method, sparsification_method, rescale, density, base_ckpt, pt_ckpt):
 
-    weight = 0.3
+    weight = 1.0
     remove_keys = []
     flat_base = [state_dict_to_vector(ckpt, remove_keys) for ckpt in base_ckpt]
     flat_pt = state_dict_to_vector(pt_ckpt, remove_keys)

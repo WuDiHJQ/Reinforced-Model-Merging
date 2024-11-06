@@ -94,174 +94,169 @@ def get_dataset(name: str, data_root: str='data'):
             T.ToTensor(), 
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ]) 
-        # data_root = os.path.join( data_root, 'CUB_200_2011' )
         train_dst = CUB200(data_root, split='train', download=False, transform=train_transform)
         val_dst = CUB200(data_root, split='test', download=False, transform=val_transform)
         classes_name = val_dst.classes
-    elif name=='cifar10_half0':
-        num_classes = 5
-        train_transform = T.Compose([
-            T.RandomCrop(32, padding=4),
-            T.Resize(224),
-            T.RandomHorizontalFlip(),
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-        val_transform = T.Compose([
-            T.Resize(224), 
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        data_root = os.path.join( data_root, 'torchdata' )
-        train_dst = Split_Dataset(datasets.CIFAR10(data_root, train=True, download=False, transform=train_transform),
-                                  10, range(0,5), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(datasets.CIFAR10(data_root, train=False, download=False, transform=val_transform),
-                                10, range(0,5), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[:5]
-    elif name=='cifar10_half1':
-        num_classes = 5
-        train_transform = T.Compose([
-            T.RandomCrop(32, padding=4),
-            T.Resize(224),
-            T.RandomHorizontalFlip(),
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-        val_transform = T.Compose([
-            T.Resize(224), 
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        data_root = os.path.join( data_root, 'torchdata' )
-        train_dst = Split_Dataset(datasets.CIFAR10(data_root, train=True, download=False, transform=train_transform),
-                                  10, range(5,10), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(datasets.CIFAR10(data_root, train=False, download=False, transform=val_transform),
-                                10, range(5,10), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[5:]
-    elif name=='cifar100_half0':
-        num_classes = 50
-        train_transform = T.Compose([
-            T.RandomCrop(32, padding=4),
-            T.Resize(224),
-            T.RandomHorizontalFlip(),
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-        val_transform = T.Compose([
-            T.Resize(224), 
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        data_root = os.path.join( data_root, 'torchdata' )
-        train_dst = Split_Dataset(datasets.CIFAR100(data_root, train=True, download=False, transform=train_transform),
-                                  100, range(0,50), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(datasets.CIFAR100(data_root, train=False, download=False, transform=val_transform),
-                                100, range(0,50), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[:50]
-    elif name=='cifar100_half1':
-        num_classes = 50
-        train_transform = T.Compose([
-            T.RandomCrop(32, padding=4),
-            T.Resize(224),
-            T.RandomHorizontalFlip(),
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-        val_transform = T.Compose([
-            T.Resize(224), 
-            T.ToTensor(), 
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        data_root = os.path.join( data_root, 'torchdata' )
-        train_dst = Split_Dataset(datasets.CIFAR100(data_root, train=True, download=False, transform=train_transform),
-                                  100, range(50,100), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(datasets.CIFAR100(data_root, train=False, download=False, transform=val_transform),
-                                100, range(50,100), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[50:]
-    elif name=='cub_half0':
-        num_classes = 100
+    elif name=='cars':
+        num_classes = 196
         train_transform = T.Compose([
             T.Resize(224),
             T.RandomCrop(224, padding=16),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
             T.Resize(224),
             T.CenterCrop(224),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        # data_root = os.path.join( data_root, 'CUB_200_2011' )
-        train_dst = Split_Dataset(CUB200(data_root, split='train', download=False, transform=train_transform), 
-                                  200, range(0,100), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(CUB200(data_root, split='test', download=False, transform=val_transform), 
-                                200, range(0,100), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[:100]
-    elif name=='cub_half1':
-        num_classes = 100
+        ])
+        train_dst = StanfordCars(data_root, split='train', download=False, transform=train_transform)
+        val_dst = StanfordCars(data_root, split='test', download=False, transform=val_transform)
+        idx_to_class = dict((v, k) for k, v in train_dst.class_to_idx.items())
+        classes_name = [idx_to_class[i].replace('_', ' ') for i in range(len(idx_to_class))]
+    elif name=='resisc45':
+        num_classes = 45
         train_transform = T.Compose([
             T.Resize(224),
             T.RandomCrop(224, padding=16),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
             T.Resize(224),
             T.CenterCrop(224),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        # data_root = os.path.join( data_root, 'CUB_200_2011' )
-        train_dst = Split_Dataset(CUB200(data_root, split='train', download=False, transform=train_transform), 
-                                  200, range(100,200), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(CUB200(data_root, split='test', download=False, transform=val_transform), 
-                                200, range(100,200), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[100:]
-    elif name=='dogs_half0':
-        num_classes = 60
+        ])
+        train_dst = RESISC45(data_root, split='train', transforms=train_transform)
+        val_dst = RESISC45(data_root, split='test', transforms=val_transform)
+        classes_name = ['satellite imagery of ' + ' '.join(c.split('_')) for c in RESISC45.classes]
+    elif name=='eurosat':
+        num_classes = 10
         train_transform = T.Compose([
             T.Resize(224),
             T.RandomCrop(224, padding=16),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
             T.Resize(224),
             T.CenterCrop(224),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        data_root = os.path.join( data_root, 'Stanford_Dogs' )
-        train_dst = Split_Dataset(StanfordDogs(data_root, split='train', download=False, transform=train_transform),
-                                  120, range(0,60), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(StanfordDogs(data_root, split='test', download=False, transform=val_transform),
-                                120, range(0,60), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[:60]
-    elif name=='dogs_half1':
-        num_classes = 60
+        ])
+        data_root = os.path.join( data_root, 'EuroSAT' )
+        train_dst = datasets.ImageFolder(os.path.join( data_root, 'train' ), transform=train_transform)
+        val_dst = datasets.ImageFolder(os.path.join( data_root, 'test' ), transform=val_transform)
+        classes_name = ['annual crop land', 'forest', 'brushland or shrubland', 'highway or road',
+                        'industrial buildings or commercial buildings', 'pasture land', 'permanent crop land',
+                        'residential buildings or homes or apartments', 'river', 'lake or sea']
+        classes_name = ['satellite imagery of ' + i for i in classes_name]
+    elif name=='svhn':
+        num_classes = 10
         train_transform = T.Compose([
             T.Resize(224),
             T.RandomCrop(224, padding=16),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
             T.Resize(224),
             T.CenterCrop(224),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
-        data_root = os.path.join( data_root, 'Stanford_Dogs' )
-        train_dst = Split_Dataset(StanfordDogs(data_root, split='train', download=False, transform=train_transform),
-                                  120, range(60,120), '%s/%s_%s.pkl'%(data_root,name,'train'))
-        val_dst = Split_Dataset(StanfordDogs(data_root, split='test', download=False, transform=val_transform),
-                                120, range(60,120), '%s/%s_%s.pkl'%(data_root,name,'test'))
-        classes_name = val_dst.dataset.classes[60:]
+        ])
+        data_root = os.path.join( data_root, 'torchdata' )
+        train_dst = datasets.SVHN(data_root, split='train', download=False, transform=train_transform)
+        val_dst = datasets.SVHN(data_root, split='test', download=False, transform=val_transform)
+        classes_name = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        classes_name = [f'number: "{c}"' for c in classes_name]
+    elif name=='mnist':
+        num_classes = 10
+        train_transform = T.Compose([
+            T.Grayscale(3),
+            T.Resize(224),
+            T.RandomCrop(224, padding=16),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        val_transform = T.Compose([
+            T.Grayscale(3),
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        data_root = os.path.join( data_root, 'torchdata' )
+        train_dst = datasets.MNIST(data_root, train=True, download=False, transform=train_transform)
+        val_dst = datasets.MNIST(data_root, train=False, download=False, transform=val_transform)
+        classes_name = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        classes_name = [f'number: "{c}"' for c in classes_name]
+    elif name=='gtsrb':
+        num_classes = 43
+        train_transform = T.Compose([
+            T.Resize(224),
+            T.RandomCrop(224, padding=16),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        val_transform = T.Compose([
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        train_dst = GTSRB(data_root, split='train', download=False, transform=train_transform)
+        val_dst = GTSRB(data_root, split='test', download=False, transform=val_transform)
+        classes_name = val_dst.classnames
+        classes_name = [f'"{c}" traffic sign' for c in classes_name]
+    elif name=='sun397':
+        num_classes = 362
+        train_transform = T.Compose([
+            T.Resize(224),
+            T.RandomCrop(224, padding=16),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        val_transform = T.Compose([
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        data_root = os.path.join( data_root, 'sun397' )
+        train_dst = datasets.ImageFolder(os.path.join( data_root, 'train' ), transform=train_transform)
+        val_dst = datasets.ImageFolder(os.path.join( data_root, 'test' ), transform=val_transform)
+        idx_to_class = dict((v, k) for k, v in train_dst.class_to_idx.items())
+        classes_name = [idx_to_class[i].replace('_', ' ') for i in range(len(idx_to_class))]
+    elif name=='dtd':
+        num_classes = 47
+        train_transform = T.Compose([
+            T.Resize(224),
+            T.RandomCrop(224, padding=16),
+            T.RandomHorizontalFlip(),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        val_transform = T.Compose([
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        data_root = os.path.join( data_root, 'dtd' )
+        train_dst = datasets.ImageFolder(os.path.join( data_root, 'train' ), transform=train_transform)
+        val_dst = datasets.ImageFolder(os.path.join( data_root, 'test' ), transform=val_transform)
+        idx_to_class = dict((v, k)for k, v in train_dst.class_to_idx.items())
+        classes_name = [idx_to_class[i].replace('_', ' ')+' texture' for i in range(len(idx_to_class))]
     elif name=='qasc':
         num_classes = classes_name = None
         dst_reader = QASC()

@@ -188,13 +188,13 @@ def main():
             state, reward, done, _ = env.step(action)
             
             # Dynamic Average Reward
-            # if done:
-            #     if (i_episode-1) % (1/data_scale) == 0:
-            #         last_reward = reward
-            #     else:
-            #         reward = dar_scale*(i_episode/max_training_episodes)*last_reward + \
-            #                  (1 - dar_scale*(i_episode/max_training_episodes))*reward
-            #         last_reward = reward
+            if done:
+                if (i_episode-1) % (1/data_scale) == 0:
+                    last_reward = reward
+                else:
+                    reward = dar_scale*(i_episode/max_training_episodes)*last_reward + \
+                             (1 - dar_scale*(i_episode/max_training_episodes))*reward
+                    last_reward = reward
                 
             # saving reward and is_terminals
             ppo_agent.buffer.rewards.append(reward)
