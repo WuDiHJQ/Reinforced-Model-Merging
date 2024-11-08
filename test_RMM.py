@@ -13,7 +13,7 @@ from engine.merge_lib import task_arithmetic, ties, dare, dare_ties
 
 parser = argparse.ArgumentParser(description='RLM Testing')
 parser.add_argument('--data_root', default='../data')
-parser.add_argument('--model', default='vit_s')
+parser.add_argument('--model', default='vit_b')
 parser.add_argument('--dataset', default='cub,dogs',
                     help='datasets for model merging.')
 parser.add_argument('--method', default='ties',
@@ -29,45 +29,45 @@ parser.add_argument('-b', '--batch_size', default=128, type=int,
 def main():
     args = parser.parse_args()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+
     if args.model.startswith('vit'):
         args.task_type = 'CV'
     else:
         args.task_type = 'NLP'
-    
+
     datasets = args.dataset.split(',')
     data_iters = []
     base_models = []
     clip_features = []
-    
+
     for data in datasets:
         _, classes_name,_, val_dst = registry.get_dataset(data, args.data_root)
         if args.task_type == 'CV':
-            model = registry.get_model(args.model, num_classes=512, pretrained=True)
+            model = registry.get_model(args.model)
             clip_features.append(load_clip_features(classes_name, device=device))
-            val_loader = torch.utils.data.DataLoader(val_dst, 
-                                                     batch_size=args.batch_size, 
-                                                     shuffle=True, 
+            val_loader = torch.utils.data.DataLoader(val_dst,
+                                                     batch_size=args.batch_size,
+                                                     shuffle=True,
                                                      num_workers=args.workers)
         elif args.task_type == 'NLP':
             (tokenizer, model) = registry.get_model(args.model)
-            val_dst = DatasetWrapper(val_dst, tokenizer, device)  
-            val_loader = torch.utils.data.DataLoader(val_dst, 
+            val_dst = DatasetWrapper(val_dst, tokenizer, device)
+            val_loader = torch.utils.data.DataLoader(val_dst,
                                                        batch_size=args.batch_size,
                                                        shuffle=False,
-                                                       num_workers=args.workers, 
+                                                       num_workers=args.workers,
                                                        collate_fn=val_dst.collate_fn)
-        
+
         model = model.to(device).eval()
         model.load_state_dict(torch.load(os.path.join('checkpoint', '%s_%s'%(data, args.model), 'best.pth')))
         data_iters.append(DataIter(val_loader))
-        base_models.append(model)     
+        base_models.append(model)
 
     ################################### Merging ##########################################
-    
+
     base_ckpt = [model.state_dict() for model in base_models]
     if args.task_type == 'CV':
-        pt_ckpt = registry.get_model(args.model, num_classes=512, pretrained=True).to(device).state_dict()
+        pt_ckpt = registry.get_model(args.model).to(device).state_dict()
     elif args.task_type == 'NLP':
         _, pt_model = registry.get_model(args.model)
         pt_ckpt = pt_model.to(device).state_dict()

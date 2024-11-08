@@ -1,8 +1,8 @@
 import os
-import clip
 import torch
 import random
 import evaluate
+import open_clip
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -25,16 +25,15 @@ class DataIter(object):
             self._iter = self.new_iter()
             data = next(self._iter)
         return data
-    
+
     def new_iter(self):
         return iter(self.dataloader)
 
 
-def load_clip_features(class_names, device):
+def load_clip_features(class_names, model, device):
     """Create CLIP target labels for class names. Return a normalized tensor of shape (num_classes, 512)."""
     text_inputs = torch.cat(
-        [clip.tokenize(f"a photo of a {c}") for c in class_names]).to(device)
-    model, preprocess = clip.load('ViT-B/32', device)
+        [open_clip.tokenize(f"a photo of a {c}") for c in class_names]).to(device)
     with torch.no_grad():
         text_features = model.encode_text(text_inputs)
 
@@ -58,10 +57,10 @@ def round_list(my_list, significant_figures):
         rounded_list.append(round(number, significant_figures))
 
     return rounded_list
-    
-    
+
+
 def round_nestedList(nested_list, significant_figures):
-    
+
     rounded_nestedList = []
     for sublist in nested_list:
 
@@ -145,7 +144,7 @@ def compute_logProb_ofAllChoices(
         allChoices_ids.view(-1),
         reduction="none",
     )
-    
+
     logProbs_ofAllChoices_ids = logProbs_ofAllChoices_ids.reshape(-1, num_choices, maxChoice_len)
     allChoices_masks = allChoices_masks.reshape(-1, num_choices, maxChoice_len)
 
@@ -183,24 +182,24 @@ def compute_forward_loss(transformer, batch):
 
     return loss
 
-    
+
 def validate_CV(model, data_iter, clip_features, iter_idx, data_scale):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+
     model.eval()
     correct = 0
     total = 0
-    
+
     losses = []
     criterion = nn.CrossEntropyLoss().to(device)
     clip_features = clip_features[iter_idx] if iter_idx is not None else clip_features
-    
+
     ################ set iterator ################
     if data_scale == 1.0:
         iterator = data_iter.new_iter()
     else:
         iterator = range(int(data_scale*len(data_iter.dataloader)))
-    
+
     with torch.no_grad(), autocast():
         for i in iterator:
             if data_scale == 1.0:
@@ -208,7 +207,7 @@ def validate_CV(model, data_iter, clip_features, iter_idx, data_scale):
             else:
                 images, target = data_iter.next()
             images, target = images.to(device), target.to(device)
-            encodings = model(images)
+            encodings = model.encode_image(images)
             encodings = encodings[iter_idx] if iter_idx is not None else encodings
             normed_encodings = encodings / encodings.norm(dim=-1, keepdim=True)       
             logits = (100.0 * normed_encodings @ clip_features.T)

@@ -14,15 +14,15 @@ from engine.utils import DataIter, load_clip_features, reset_random, validate_CV
 
 parser = argparse.ArgumentParser(description='Vision Training')
 parser.add_argument('--data_root', default='../data')
-parser.add_argument('--model', default='vit_s')
+parser.add_argument('--model', default='vit_b')
 parser.add_argument('--dataset', default='cifar100')
 parser.add_argument('--workers', default=8, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=100, type=int, metavar='N',
+parser.add_argument('--epochs', default=50, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('-b', '--batch_size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
-parser.add_argument('--lr', '--learning_rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning_rate', default=1e-5, type=float,
                     metavar='LR', help='initial learning rate', dest='lr')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
@@ -33,27 +33,27 @@ parser.add_argument('--seed', default=0, type=int,
 def main():
     args = parser.parse_args()
     reset_random(args.seed)
-    
+
     print('='*100)
     for k, v in vars(args).items():
         print("%s: %s"%(k,v))
     print('='*100)
-    
+
     main_worker(args)
 
-    
+
 def main_worker(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ############################################
     # Setup models
     ############################################
+    model = registry.get_model(args.model)
+    model = model.to(device)
+
     num_classes, classes_name, train_dataset, val_dataset = registry.get_dataset(args.dataset, args.data_root)
-    clip_features = load_clip_features(classes_name, device=device)
+    clip_features = load_clip_features(classes_name, model, device=device)
     # print(train_dataset)
     # print(val_dataset)
-    
-    model = registry.get_model(args.model, num_classes=512, pretrained=True)
-    model = model.to(device)
 
     ############################################
     # Setup dataset
@@ -73,12 +73,12 @@ def main_worker(args):
     scaler = GradScaler()
     criterion = nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=0.9, weight_decay=5e-4)
-    
+
     ne_iters = len(train_iter.dataloader)
     lr_schedule = np.interp(np.arange(1 + args.epochs * ne_iters),
                             [0, 5 * ne_iters, args.epochs * ne_iters], [0, 1, 0])
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_schedule.__getitem__)
-    
+
     ############################################
     # Setup Folder
     ############################################
@@ -87,7 +87,7 @@ def main_worker(args):
         os.makedirs(path)
     best_ckpt = path + '/best.pth'
     last_ckpt = path + '/last.pth'
-    
+
     ############################################
     # Evaluate
     ############################################
@@ -111,7 +111,7 @@ def main_worker(args):
             optimizer.zero_grad(set_to_none=True)
             with autocast():
                 images, target = images.to(device), target.to(device)
-                encodings = model(images)
+                encodings = model.encode_image(images)
                 normed_encodings = encodings / encodings.norm(dim=-1, keepdim=True)
                 logits = (100.0 * normed_encodings @ clip_features.T)
                 pred = logits.argmax(dim=1)

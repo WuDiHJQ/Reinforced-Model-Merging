@@ -1,23 +1,30 @@
 import os
+import open_clip
 from torchvision import datasets
 from torchvision import transforms as T
 
-from engine.models import vit, t5
 from engine.datasets import *
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 
-def get_model(name: str, num_classes=512, pretrained=True):
+def get_model(name: str):
     name = name.lower()
-    if name=='vit_s':
-        model = vit.vit_s_timm(num_classes, pretrained)
-    elif name=='vit_b':
-        model = vit.vit_b_timm(num_classes, pretrained)
+    if name=='vit_b':
+        model,_,_ = open_clip.create_model_and_transforms('ViT-B-32', pretrained='openai')
+    elif name=='vit_l':
+        model,_,_ = open_clip.create_model_and_transforms('ViT-L-14', pretrained='openai')
     elif name=='t5_small':
-        model = t5.t5_small()
+        tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small", model_max_length=128)
+        transformer = AutoModelForSeq2SeqLM.from_pretrained("google-t5/t5-small")
+        model = (tokenizer, transformer)
     elif name=='t5_base':
-        model = t5.t5_base()
+        tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-base", model_max_length=128)
+        transformer = AutoModelForSeq2SeqLM.from_pretrained("google-t5/t5-base")
+        model = (tokenizer, transformer)
     elif name=='t5_large':
-        model = t5.t5_large()
+        tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-large", model_max_length=128)
+        transformer = AutoModelForSeq2SeqLM.from_pretrained("google-t5/t5-large")
+        model = (tokenizer, transformer)
     return model
 
 
@@ -30,14 +37,14 @@ def get_dataset(name: str, data_root: str='data'):
             T.RandomCrop(32, padding=4),
             T.Resize(224),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
-            T.Resize(224), 
-            T.ToTensor(), 
+            T.Resize(224),
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
+        ])
         data_root = os.path.join( data_root, 'torchdata' )
         train_dst = datasets.CIFAR10(data_root, train=True, download=False, transform=train_transform)
         val_dst = datasets.CIFAR10(data_root, train=False, download=False, transform=val_transform)
@@ -48,14 +55,14 @@ def get_dataset(name: str, data_root: str='data'):
             T.RandomCrop(32, padding=4),
             T.Resize(224),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
-            T.Resize(224), 
-            T.ToTensor(), 
+            T.Resize(224),
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
+        ])
         data_root = os.path.join( data_root, 'torchdata' )
         train_dst = datasets.CIFAR100(data_root, train=True, download=False, transform=train_transform)
         val_dst = datasets.CIFAR100(data_root, train=False, download=False, transform=val_transform)
@@ -66,15 +73,15 @@ def get_dataset(name: str, data_root: str='data'):
             T.Resize(224),
             T.RandomCrop(224, padding=16),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
             T.Resize(224),
             T.CenterCrop(224),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
+        ])
         data_root = os.path.join( data_root, 'Stanford_Dogs' )
         train_dst = StanfordDogs(data_root, split='train', download=False, transform=train_transform)
         val_dst = StanfordDogs(data_root, split='test', download=False, transform=val_transform)
@@ -85,15 +92,15 @@ def get_dataset(name: str, data_root: str='data'):
             T.Resize(224),
             T.RandomCrop(224, padding=16),
             T.RandomHorizontalFlip(),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
         val_transform = T.Compose([
             T.Resize(224),
             T.CenterCrop(224),
-            T.ToTensor(), 
+            T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]) 
+        ])
         train_dst = CUB200(data_root, split='train', download=False, transform=train_transform)
         val_dst = CUB200(data_root, split='test', download=False, transform=val_transform)
         classes_name = val_dst.classes

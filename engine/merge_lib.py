@@ -149,7 +149,17 @@ def get_mask(delta, method, mask_dtype):
     return sign == majority_sign
 
 
-def task_arithmetic(base_ckpt, pt_ckpt):  
+def weight_averaging(base_ckpt, pt_ckpt):
+    remove_keys = []
+    flat_base = [state_dict_to_vector(ckpt, remove_keys) for ckpt in base_ckpt]
+    flat_pt = state_dict_to_vector(pt_ckpt, remove_keys)
+
+    weight_avg = sum(flat_base) / len(flat_base)
+
+    return vector_to_state_dict(weight_avg.to(flat_pt.dtype), pt_ckpt, remove_keys)
+
+
+def task_arithmetic(base_ckpt, pt_ckpt):
     return GeneralizedTaskArithmetic(consensus_method=None, 
                                  sparsification_method=None, 
                                  rescale=False, 
