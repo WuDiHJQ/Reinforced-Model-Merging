@@ -25,6 +25,8 @@ def get_model(name: str):
         tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-large", model_max_length=128)
         transformer = AutoModelForSeq2SeqLM.from_pretrained("google-t5/t5-large")
         model = (tokenizer, transformer)
+    else:
+        raise NotImplementedError
     return model
 
 

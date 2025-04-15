@@ -183,7 +183,7 @@ def compute_forward_loss(transformer, batch):
     return loss
 
 
-def validate_CV(model, data_iter, clip_features, iter_idx, data_scale):
+def validate_CV(model, data_iter, clip_features, data_scale):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model.eval()
@@ -192,7 +192,6 @@ def validate_CV(model, data_iter, clip_features, iter_idx, data_scale):
 
     losses = []
     criterion = nn.CrossEntropyLoss().to(device)
-    clip_features = clip_features[iter_idx] if iter_idx is not None else clip_features
 
     ################ set iterator ################
     if data_scale == 1.0:
@@ -208,7 +207,6 @@ def validate_CV(model, data_iter, clip_features, iter_idx, data_scale):
                 images, target = data_iter.next()
             images, target = images.to(device), target.to(device)
             encodings = model.encode_image(images)
-            encodings = encodings[iter_idx] if iter_idx is not None else encodings
             normed_encodings = encodings / encodings.norm(dim=-1, keepdim=True)       
             logits = (100.0 * normed_encodings @ clip_features.T)
             pred = logits.argmax(dim=1)

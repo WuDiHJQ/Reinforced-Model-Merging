@@ -18,8 +18,8 @@ parser.add_argument('--model', default='vit_b')
 parser.add_argument('--dataset', default='cifar100')
 parser.add_argument('--workers', default=8, type=int, metavar='N',
                     help='number of data loading workers (default: 8)')
-parser.add_argument('--epochs', default=50, type=int, metavar='N',
-                    help='number of total epochs to run')
+parser.add_argument('--batches', default=3000, type=int, metavar='N',
+                    help='number of total batches to run')
 parser.add_argument('-b', '--batch_size', default=128, type=int,
                     metavar='N', help='mini-batch size (default: 128)')
 parser.add_argument('--lr', '--learning_rate', default=1e-5, type=float,
@@ -72,12 +72,9 @@ def main_worker(args):
     ############################################
     scaler = GradScaler()
     criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=0.9, weight_decay=5e-4)
 
-    ne_iters = len(train_iter.dataloader)
-    lr_schedule = np.interp(np.arange(1 + args.epochs * ne_iters),
-                            [0, 5 * ne_iters, args.epochs * ne_iters], [0, 1, 0])
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_schedule.__getitem__)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.batches)
 
     ############################################
     # Setup Folder
@@ -93,7 +90,7 @@ def main_worker(args):
     ############################################
     if args.evaluate:
         model.load_state_dict(torch.load(best_ckpt))
-        val_acc, val_loss = validate_CV(model, val_iter, clip_features, None, data_scale=1.0)
+        val_acc, val_loss = validate_CV(model, val_iter, clip_features, data_scale=1.0)
         print('Model={}_{}.pth, Val Loss={:.4f}, Val Acc={:.4f}'
               .format(args.dataset, args.model, val_loss, val_acc))
         return
@@ -102,48 +99,51 @@ def main_worker(args):
     # Train Loop
     ############################################
     best_acc = 0
-    for epoch in range(args.epochs):
+    losses = []
+    total = correct = 0
+    for i in range(1, args.batches+1):
         model.train()
-        losses = []
-        correct = 0
-        total = 0
-        for i, (images, target) in enumerate(tqdm(train_iter.dataloader)):
-            optimizer.zero_grad(set_to_none=True)
-            with autocast():
-                images, target = images.to(device), target.to(device)
-                encodings = model.encode_image(images)
-                normed_encodings = encodings / encodings.norm(dim=-1, keepdim=True)
-                logits = (100.0 * normed_encodings @ clip_features.T)
-                pred = logits.argmax(dim=1)
-                loss = criterion(logits, target)
-                
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-            scheduler.step()
-            
-            losses.append(loss.item())
-            
-            for gt, p in zip(target, pred):
-                is_correct = (gt == p).item()
-                correct += is_correct
 
-            total += images.shape[0]
-            
-        train_acc = correct / total
-        train_loss = np.mean(losses)
-            
-        val_acc, val_loss = validate_CV(model, val_iter, clip_features, None, data_scale=1.0)
-        
-        torch.save(model.state_dict(), last_ckpt)
-        
-        if val_acc > best_acc:
-            best_acc = val_acc
-            torch.save(model.state_dict(), best_ckpt)
-            
-        print('Epoch={:d}, Train Loss={:.4f}, Train Acc={:.4f}, Val Loss={:.4f}, Val Acc={:.4f}, Lr={:.6f}'
-              .format(epoch, train_loss, train_acc, val_loss, val_acc, optimizer.param_groups[0]['lr']))
-        
+        optimizer.zero_grad(set_to_none=True)
+        images, target = train_iter.next()
+        with autocast():
+            images, target = images.to(device), target.to(device)
+            encodings = model.encode_image(images)
+            normed_encodings = encodings / encodings.norm(dim=-1, keepdim=True)
+            logits = (100.0 * normed_encodings @ clip_features.T)
+            pred = logits.argmax(dim=1)
+            loss = criterion(logits, target)
+
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        scheduler.step()
+
+        losses.append(loss.item())
+
+        for gt, p in zip(target, pred):
+            is_correct = (gt == p).item()
+            correct += is_correct
+
+        total += images.shape[0]
+
+        if i % 100 == 0:
+            train_acc = correct / total
+            train_loss = np.mean(losses)
+            losses = []
+            total = correct = 0
+
+            val_acc, val_loss = validate_CV(model, val_iter, clip_features, data_scale=1.0)
+
+            torch.save(model.state_dict(), last_ckpt)
+
+            if val_acc > best_acc:
+                best_acc = val_acc
+                torch.save(model.state_dict(), best_ckpt)
+
+            print('Batch={:d}, Train Loss={:.4f}, Train Acc={:.4f}, Val Loss={:.4f}, Val Acc={:.4f}, Lr={:.6f}'
+                  .format(i, train_loss, train_acc, val_loss, val_acc, optimizer.param_groups[0]['lr']))
+
     print("Best Acc: %.4f" % best_acc)
     
 

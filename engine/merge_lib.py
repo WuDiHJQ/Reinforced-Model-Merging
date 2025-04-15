@@ -84,28 +84,23 @@ def bernoulli(tensor: torch.Tensor, density: float, rescale: bool):
     return res.to(tensor.dtype)
 
 
-def GeneralizedTaskArithmetic(consensus_method, sparsification_method, rescale, density, base_ckpt, pt_ckpt):
+def GeneralizedTaskArithmetic(weight, consensus_method, sparsification_method, rescale, density, base_ckpt, pt_ckpt):
 
-    weight = 1.0
     remove_keys = []
     flat_base = [state_dict_to_vector(ckpt, remove_keys) for ckpt in base_ckpt]
     flat_pt = state_dict_to_vector(pt_ckpt, remove_keys)
 
-    tvs = get_task_vectors(flat_base, flat_pt)
+    tvs = [base-flat_pt for base in flat_base]
 
     # sparsify
     if sparsification_method:
         for tv in tvs:
             if sparsification_method == "magnitude":
-                tv["delta"] = magnitude(tv["delta"], density=density, rescale=rescale)
+                tv = magnitude(tv, density=density, rescale=rescale)
             elif sparsification_method == "random":
-                tv["delta"] = bernoulli(tv["delta"], density=density, rescale=rescale)
+                tv = bernoulli(tv, density=density, rescale=rescale)
 
-    deltas = torch.stack([tv["delta"] for tv in tvs], dim=0)
-
-    weights = torch.stack([torch.full(tv["delta"].shape, weight, dtype=deltas.dtype, device=deltas.device) for tv in tvs], dim=0)
-    
-    weighted_deltas = deltas * weights
+    weighted_deltas = torch.stack([tv*weight for tv in tvs], dim=0)
 
     # get sign consensus and mix deltas
     if consensus_method:
@@ -120,15 +115,6 @@ def GeneralizedTaskArithmetic(consensus_method, sparsification_method, rescale, 
         mixed_delta = weighted_deltas.sum(dim=0)
 
     return vector_to_state_dict((flat_pt + mixed_delta).to(flat_pt.dtype), pt_ckpt, remove_keys)
-
-
-def get_task_vectors(flat_base, flat_pt):
-    tvs = []
-    for base in flat_base:
-        delta = base - flat_pt
-        d = {"delta":delta}
-        tvs.append(d)
-    return tvs
 
 
 def get_mask(delta, method, mask_dtype):
@@ -159,35 +145,39 @@ def weight_averaging(base_ckpt, pt_ckpt):
     return vector_to_state_dict(weight_avg.to(flat_pt.dtype), pt_ckpt, remove_keys)
 
 
-def task_arithmetic(base_ckpt, pt_ckpt):
-    return GeneralizedTaskArithmetic(consensus_method=None, 
-                                 sparsification_method=None, 
-                                 rescale=False, 
+def task_arithmetic(base_ckpt, pt_ckpt, weight):
+    return GeneralizedTaskArithmetic(weight=weight,
+                                 consensus_method=None,
+                                 sparsification_method=None,
+                                 rescale=False,
                                  density=0.3,
-                                 base_ckpt=base_ckpt, 
+                                 base_ckpt=base_ckpt,
                                  pt_ckpt=pt_ckpt)
 
 
-def ties(base_ckpt, pt_ckpt):
-    return GeneralizedTaskArithmetic(consensus_method='sum', 
-                                     sparsification_method='magnitude', 
-                                     rescale=False, 
+def ties(base_ckpt, pt_ckpt, weight):
+    return GeneralizedTaskArithmetic(weight=weight,
+                                     consensus_method='sum',
+                                     sparsification_method='magnitude',
+                                     rescale=False,
                                      density=0.3,
-                                     base_ckpt=base_ckpt, 
+                                     base_ckpt=base_ckpt,
                                      pt_ckpt=pt_ckpt)
-    
-    
-def dare(base_ckpt, pt_ckpt):
-    return GeneralizedTaskArithmetic(consensus_method=None, 
-                                     sparsification_method='random', 
-                                     rescale=True, 
+
+
+def dare(base_ckpt, pt_ckpt, weight):
+    return GeneralizedTaskArithmetic(weight=weight,
+                                     consensus_method=None,
+                                     sparsification_method='random',
+                                     rescale=True,
                                      density=0.66,
-                                     base_ckpt=base_ckpt, 
-                                     pt_ckpt=pt_ckpt)    
-    
-    
-def dare_ties(base_ckpt, pt_ckpt):
-    return GeneralizedTaskArithmetic(consensus_method='sum', 
+                                     base_ckpt=base_ckpt,
+                                     pt_ckpt=pt_ckpt)
+
+
+def dare_ties(base_ckpt, pt_ckpt, weight):
+    return GeneralizedTaskArithmetic(weight=weight,
+                                     consensus_method='sum',
                                      sparsification_method='random', 
                                      rescale=True, 
                                      density=0.66,
