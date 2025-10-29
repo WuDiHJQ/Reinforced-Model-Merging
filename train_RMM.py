@@ -18,6 +18,8 @@ parser.add_argument('--dataset', default='cub,dogs',
                     help='datasets for model merging.')
 parser.add_argument('--method', default='ties',
                     help='methods for model merging.')
+parser.add_argument('--data_scale', default=1.0, type=float,
+                    help='data scale for model validation.')
 parser.add_argument('--run_num', default=0, type=int,
                     help='run number for RLM testing.')
 parser.add_argument('--workers', default=8, type=int,
@@ -94,6 +96,7 @@ def main():
     env_name = '%s_%s_%s'%(args.model, args.dataset, args.method)
     run_num = args.run_num
 
+    data_scale = args.data_scale    # data scale for model validation
     total_test_episodes = 10        # total num of testing episodes
 
     K_epochs = 40                   # update policy for K epochs
@@ -106,9 +109,9 @@ def main():
     ###############################################
 
     if args.task_type == 'CV':
-        env = Env_CV(base_models, merge_models, data_iters, clip_features, data_scale=1.0)
+        env = Env_CV(base_models, merge_models, data_iters, clip_features, data_scale)
     elif args.task_type == 'NLP':
-        env = Env_NLP(base_models, merge_models, data_iters, data_scale=1.0)
+        env = Env_NLP(base_models, merge_models, data_iters, data_scale)
 
     # state/action space dimension
     state_dim = env.observation_space.n
